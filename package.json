@@ -1,0 +1,19 @@
+{
+  "name": "hwhelper",
+  "version": "1.0.0",
+  "description": "helper bridge code for HealthWise",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/dhavalkshah/HWHelper.git"
+  },
+  "author": "Dhaval Shah",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/dhavalkshah/HWHelper/issues"
+  },
+  "homepage": "https://github.com/dhavalkshah/HWHelper#readme"
+}
