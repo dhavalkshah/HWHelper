@@ -14,6 +14,20 @@ import android.util.Log;
 import com.google.firebase.analytics.FirebaseAnalytics;
 import java.util.Iterator;
 import android.os.Bundle;
+import android.content.Context;
+
+import java.util.HashMap;
+import java.util.Map;
+
+import io.fabric.sdk.android.Fabric;
+
+import org.apache.cordova.CordovaInterface;
+import com.crashlytics.android.Crashlytics;
+
+public interface ActionHandler {
+    boolean handle(JSONArray args, CordovaInterface cordova);
+}
+
 public class HWHelper extends CordovaPlugin {
     public static final String TAG = "HWHelper";
     public static String platform;                            // Device OS
@@ -24,6 +38,8 @@ public class HWHelper extends CordovaPlugin {
     private static final String AMAZON_DEVICE = "Amazon";
 
     private FirebaseAnalytics firebaseAnalytics;
+
+    private Map<String, ActionHandler> handlers = new HashMap<String, ActionHandler>();
 
     @Override
     public boolean execute(String action, JSONArray args, CallbackContext callbackContext) throws JSONException {
@@ -75,7 +91,224 @@ public class HWHelper extends CordovaPlugin {
             this.setCurrentScreen(screenName, callbackContext);
             return true;
         }
+        else if(action.equals("crashlyticsInit")){
+            Log.d(TAG, "crashlyticsInit");
+            this.crashlyticsInit(callbackContext);
+            return true;
+        }
+        else if(action.equals("crash")){
+            Log.d(TAG, "crash");
+            this.crash(callbackContext);
+            return true;
+        }
+        else if(action.equals("logPriority")){
+            Log.d(TAG, "logPriority");
+            this.logPriority(args, callbackContext);
+            return true;
+        }
+        else if(action.equals("log")){
+            Log.d(TAG, "log");
+            this.log(args, callbackContext);
+            return true;
+        }
+        else if(action.equals("setString")){
+            Log.d(TAG, "setString");
+            this.setString(args, callbackContext);
+            return true;
+        }
+        else if(action.equals("setBool")){
+            Log.d(TAG, "setBool");
+            this.setString(args, callbackContext);
+            return true;
+        }
+        else if(action.equals("setDouble")){
+            Log.d(TAG, "setDouble");
+            this.setDouble(args, callbackContext);
+            return true;
+        }
+        else if(action.equals("setFloat")){
+            Log.d(TAG, "setFloat");
+            this.setFloat(args, callbackContext);
+            return true;
+        }
+        else if(action.equals("setInt")){
+            Log.d(TAG, "setInt");
+            this.setInt(args, callbackContext);
+            return true;
+        }
+        else if(action.equals("logException")){
+            Log.d(TAG, "logException");
+            this.logException(args, callbackContext);
+            return true;
+        }
+        else if(action.equals("setUserIdentifier")){
+            Log.d(TAG, "setUserIdentifier");
+            this.setUserIdentifier(args, callbackContext);
+            return true;
+        }
         return false;
+    }
+
+    
+
+    private void crashlyticsInit(CallbackContext callbackContext){
+
+        Log.d(TAG, "Initializing FBCrashlyticsPlugin");
+
+        Fabric.with(this.cordova.getActivity(), new Crashlytics());
+        callbackContext.success("init success");
+    }
+    private void crash(CallbackContext callbackContext){
+        this.cordova.getActivity().runOnUiThread(new Runnable() {
+            @Override
+            public void run(){
+                Crashlytics.getInstance().crash();
+            }
+        });
+        callbackContext.success("init success");
+    }
+    private void logPriority(final JSONArray args, CallbackContext callbackContext){
+        this.cordova.getActivity().runOnUiThread(new Runnable() {
+            @Override
+            public void run(){
+                try {
+                    final Integer priority = args.getInt(0);
+                    final String tag = args.getString(1);
+                    final String msg = args.getString(2);
+
+                    Crashlytics.log(priority, tag, msg);
+                } catch (JSONException e) {
+                    Log.e(TAG, "Error logging with priority", e);
+                }
+            }
+        });
+        callbackContext.success("logPriority success");
+    }
+    private void log(final JSONArray args, CallbackContext callbackContext){
+        this.cordova.getActivity().runOnUiThread(new Runnable() {
+            @Override
+            public void run(){
+                try {
+                    final String msg = args.getString(0);
+                    Crashlytics.log(msg);
+                } catch (JSONException e) {
+                    Log.e(TAG, "Error logging", e);
+                }
+            }
+        });
+        callbackContext.success("log success");
+    }
+    private void setString(final JSONArray args, CallbackContext callbackContext){
+        this.cordova.getActivity().runOnUiThread(new Runnable() {
+            @Override
+            public void run(){
+                try {
+                    final String key = args.getString(0);
+                    final String value = args.getString(1);
+        
+                    Crashlytics.setString(key, value);
+                } catch (JSONException e) {
+                    Log.e(TAG, "Error setting string", e);
+                }
+            }
+        });
+        callbackContext.success("setString success");
+    }
+    private void setBool(final JSONArray args, CallbackContext callbackContext){
+        this.cordova.getActivity().runOnUiThread(new Runnable() {
+            @Override
+            public void run(){
+                try {
+                    final String key = args.getString(0);
+                    final Boolean value = args.getBoolean(1);
+        
+                    Crashlytics.setBool(key, value);
+                } catch (JSONException e) {
+                    Log.e(TAG, "Error setting string", e);
+                }
+            }
+        });
+        callbackContext.success("setBool success");
+    }
+    private void setDouble(final JSONArray args, CallbackContext callbackContext){
+        this.cordova.getActivity().runOnUiThread(new Runnable() {
+            @Override
+            public void run(){
+                try {
+                    final String key = args.getString(0);
+                    final Double value = args.getDouble(1);
+        
+                    Crashlytics.setDouble(key, value);
+                } catch (JSONException e) {
+                    Log.e(TAG, "Error setting string", e);
+                }
+            }
+        });
+        callbackContext.success("setBool success");
+    }
+    private void setFloat(final JSONArray args, CallbackContext callbackContext){
+        this.cordova.getActivity().runOnUiThread(new Runnable() {
+            @Override
+            public void run(){
+                try {
+                    final String key = args.getString(0);
+                    final Double value = args.getDouble(1);
+
+                    Crashlytics.setFloat(key, value.floatValue());
+                } catch (JSONException e) {
+                    Log.e(TAG, "Error setting string", e);
+                }
+            }
+        });
+        callbackContext.success("setFloats success");
+    }
+    private void setInt(final JSONArray args, CallbackContext callbackContext){
+        this.cordova.getActivity().runOnUiThread(new Runnable() {
+            @Override
+            public void run(){
+                try {
+                    final String key = args.getString(0);
+                    final Integer value = args.getInt(1);
+
+                    Crashlytics.setInt(key, value);
+                } catch (JSONException e) {
+                    Log.e(TAG, "Error setting int", e);
+                }
+            }
+        });
+        callbackContext.success("setInt success");
+    }
+    private void logException(final JSONArray args, CallbackContext callbackContext){
+        this.cordova.getActivity().runOnUiThread(new Runnable() {
+            @Override
+            public void run(){
+                try {
+                    final String msg = args.getString(0);
+
+                    Exception exception = new Exception(msg);
+
+                    Crashlytics.logException(exception);
+                } catch (JSONException e) {
+                    Log.e(TAG, "Error setting logException", e);
+                }
+            }
+        });
+        callbackContext.success("logException success");
+    }
+    private void setUserIdentifier(final JSONArray args, CallbackContext callbackContext){
+        this.cordova.getActivity().runOnUiThread(new Runnable() {
+            @Override
+            public void run(){
+                try {
+                    final String identifier = args.getString(0);
+
+                    Crashlytics.setUserIdentifier(identifier);
+                } catch (JSONException e) {
+                    Log.e(TAG, "Error setting setUserIdentifier", e);
+                }
+            }
+        });
+        callbackContext.success("setUserIdentifier success");
     }
 
     private void pluginInitialize(CallbackContext callbackContext) {
