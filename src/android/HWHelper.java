@@ -24,10 +24,6 @@ import io.fabric.sdk.android.Fabric;
 import org.apache.cordova.CordovaInterface;
 import com.crashlytics.android.Crashlytics;
 
-public interface ActionHandler {
-    boolean handle(JSONArray args, CordovaInterface cordova);
-}
-
 public class HWHelper extends CordovaPlugin {
     public static final String TAG = "HWHelper";
     public static String platform;                            // Device OS
@@ -38,8 +34,6 @@ public class HWHelper extends CordovaPlugin {
     private static final String AMAZON_DEVICE = "Amazon";
 
     private FirebaseAnalytics firebaseAnalytics;
-
-    private Map<String, ActionHandler> handlers = new HashMap<String, ActionHandler>();
 
     @Override
     public boolean execute(String action, JSONArray args, CallbackContext callbackContext) throws JSONException {
