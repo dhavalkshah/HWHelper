@@ -354,12 +354,18 @@ public class HWHelper extends CordovaPlugin {
         this.firebaseAnalytics.setAnalyticsCollectionEnabled(enabled);
         callbackContext.success();
     }
-    private void setCurrentScreen(String screenName, CallbackContext callbackContext) {
-        firebaseAnalytics.setCurrentScreen(
-            cordova.getActivity(),
-            screenName,
-            null
-        );
+    private void setCurrentScreen(final String screenName, CallbackContext callbackContext) {
+        this.cordova.getActivity().runOnUiThread(new Runnable() {            
+            private String locScreenName = screenName;
+            @Override
+            public void run(){
+                FirebaseAnalytics.getInstance(cordova.getActivity().getApplicationContext()).setCurrentScreen(
+                    cordova.getActivity(),
+                    locScreenName,
+                    null
+                );
+            }
+        });
         callbackContext.success();
     }
 
