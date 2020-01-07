@@ -24,6 +24,22 @@ import io.fabric.sdk.android.Fabric;
 import org.apache.cordova.CordovaInterface;
 import com.crashlytics.android.Crashlytics;
 
+import android.content.Intent;
+import android.net.Uri;
+import com.google.android.gms.tasks.Continuation;
+import com.google.android.gms.tasks.OnCompleteListener;
+import com.google.android.gms.tasks.Task;
+import com.google.firebase.dynamiclinks.DynamicLink;
+import com.google.firebase.dynamiclinks.DynamicLink.AndroidParameters;
+import com.google.firebase.dynamiclinks.DynamicLink.GoogleAnalyticsParameters;
+import com.google.firebase.dynamiclinks.DynamicLink.IosParameters;
+import com.google.firebase.dynamiclinks.DynamicLink.ItunesConnectAnalyticsParameters;
+import com.google.firebase.dynamiclinks.DynamicLink.NavigationInfoParameters;
+import com.google.firebase.dynamiclinks.DynamicLink.SocialMetaTagParameters;
+import com.google.firebase.dynamiclinks.FirebaseDynamicLinks;
+import com.google.firebase.dynamiclinks.PendingDynamicLinkData;
+import com.google.firebase.dynamiclinks.ShortDynamicLink;
+
 public class HWHelper extends CordovaPlugin {
     public static final String TAG = "HWHelper";
     public static String platform;                            // Device OS
@@ -34,6 +50,10 @@ public class HWHelper extends CordovaPlugin {
     private static final String AMAZON_DEVICE = "Amazon";
 
     private FirebaseAnalytics firebaseAnalytics;
+
+    private FirebaseDynamicLinks firebaseDynamicLinks;
+    private String domainUriPrefix;
+    private CallbackContext dynamicLinkCallback;
 
     @Override
     public boolean execute(String action, JSONArray args, CallbackContext callbackContext) throws JSONException {
@@ -138,6 +158,16 @@ public class HWHelper extends CordovaPlugin {
         else if(action.equals("setUserIdentifier")){
             Log.d(TAG, "setUserIdentifier");
             this.setUserIdentifier(args, callbackContext);
+            return true;
+        }
+        else if(action.equals("fbDynamicLinkInit")){
+            Log.d(TAG, "fbDynamicLinkInit");
+            this.fbDynamicLinkInit(callbackContext);
+            return true;
+        }
+        else if(action.equals("onDynamicLink")){
+            Log.d(TAG, "onDynamicLink");
+            this.onDynamicLink(callbackContext);
             return true;
         }
         return false;
@@ -438,5 +468,36 @@ public class HWHelper extends CordovaPlugin {
             return true;
         }
         return false;
+    }
+    public void fbDynamicLinkInit(CallbackContext callbackContext) {
+        Log.d(TAG, "Starting Firebase Dynamic Link plugin");
+        this.firebaseDynamicLinks = FirebaseDynamicLinks.getInstance();
+        callbackContext.success("init success");
+    }
+    public void onDynamicLink(CallbackContext callbackContext) {
+        this.dynamicLinkCallback = callbackContext;
+        respondWithDynamicLink(cordova.getActivity().getIntent());
+    }
+    private void respondWithDynamicLink(Intent intent) {
+        this.firebaseDynamicLinks.getDynamicLink(intent)
+                .continueWith(new Continuation<PendingDynamicLinkData, JSONObject>() {
+                    @Override
+                    public JSONObject then(Task<PendingDynamicLinkData> task) throws JSONException {
+                        PendingDynamicLinkData data = task.getResult();
+
+                        JSONObject result = new JSONObject();
+                        result.put("deepLink", data.getLink());
+                        result.put("clickTimestamp", data.getClickTimestamp());
+                        result.put("minimumAppVersion", data.getMinimumAppVersion());
+
+                        if (dynamicLinkCallback != null) {
+                            PluginResult pluginResult = new PluginResult(PluginResult.Status.OK, result);
+                            pluginResult.setKeepCallback(true);
+                            dynamicLinkCallback.sendPluginResult(pluginResult);
+                        }
+
+                        return result;
+                    }
+                });
     }
 }

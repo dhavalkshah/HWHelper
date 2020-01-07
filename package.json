@@ -1,6 +1,6 @@
 {
   "name": "hwhelper",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "helper bridge code for HealthWise",
   "main": "index.js",
   "scripts": {

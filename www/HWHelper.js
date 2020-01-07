@@ -57,3 +57,9 @@ exports.setUserIdentifier = function(identifier, success, error){
 exports.logException = function(message, success, error){
     exec(success, error, 'HWHelper', 'logException', [message]);
 };
+exports.fbDynamicLinkInit = function(success, error){
+    exec(success, error, 'HWHelper', 'fbDynamicLinkInit', []);
+};
+exports.onDynamicLink = function(success, error){
+    exec(success, error, 'HWHelper', 'onDynamicLink');
+};
