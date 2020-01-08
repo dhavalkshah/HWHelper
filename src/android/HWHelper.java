@@ -39,6 +39,8 @@ import com.google.firebase.dynamiclinks.DynamicLink.SocialMetaTagParameters;
 import com.google.firebase.dynamiclinks.FirebaseDynamicLinks;
 import com.google.firebase.dynamiclinks.PendingDynamicLinkData;
 import com.google.firebase.dynamiclinks.ShortDynamicLink;
+import org.apache.cordova.PluginResult;
+import org.apache.cordova.CordovaWebView;
 
 public class HWHelper extends CordovaPlugin {
     public static final String TAG = "HWHelper";
@@ -53,11 +55,37 @@ public class HWHelper extends CordovaPlugin {
 
     private FirebaseDynamicLinks firebaseDynamicLinks;
     private String domainUriPrefix;
-    private CallbackContext dynamicLinkCallback;
+    public static CallbackContext dynamicLinkCallback;
+
+    public static CordovaWebView gWebView;
+    public static String notificationCallBack = "HWHelper.onDynamicLinkReceived";
+    public static Boolean notificationCallBackReady = false;
+    public static Intent lastPush = null;
+
+    public void initialize(CordovaInterface cordova, CordovaWebView webView) {
+		super.initialize(cordova, webView);
+        gWebView = webView;
+        this.firebaseDynamicLinks = FirebaseDynamicLinks.getInstance();
+		Log.d(TAG, "==> HWHelper initialize");
+	}
 
     @Override
     public boolean execute(String action, JSONArray args, CallbackContext callbackContext) throws JSONException {
-        if(action.equals("getDeviceInfo")) {
+        if (action.equals("ready")) {
+            callbackContext.success();
+        }
+        else if (action.equals("registerDynamicLink")) {
+            notificationCallBackReady = true;
+            final CallbackContext localcallbackContext = callbackContext;
+            cordova.getActivity().runOnUiThread(new Runnable() {
+                public void run() {
+                    if(lastPush != null) HWHelper.sendPushPayload1( lastPush );
+                    lastPush = null;
+                    localcallbackContext.success();
+                }
+            });
+        }
+        else if(action.equals("getDeviceInfo")) {
             Log.d(TAG, "getDeviceInfo");
             String message = args.getString(0);
             this.getDeviceInfo(message, callbackContext);
@@ -171,6 +199,51 @@ public class HWHelper extends CordovaPlugin {
             return true;
         }
         return false;
+    }
+
+    public static void sendPushPayload1(final Intent intent) {
+        FirebaseDynamicLinks.getInstance().getDynamicLink(intent)
+                .continueWith(new Continuation<PendingDynamicLinkData, JSONObject>() {
+                    @Override
+                    public JSONObject then(Task<PendingDynamicLinkData> task) throws JSONException {
+                        PendingDynamicLinkData data = task.getResult();
+
+                        JSONObject result = new JSONObject();
+                        result.put("deepLink", data.getLink());
+                        result.put("clickTimestamp", data.getClickTimestamp());
+                        result.put("minimumAppVersion", data.getMinimumAppVersion());
+                        String callBack = "javascript:" + notificationCallBack + "(" + result.toString() + ")";
+
+                        if(notificationCallBackReady && gWebView != null){
+                            Log.d(TAG, "\tSent PUSH to view: " + callBack);
+                            gWebView.sendJavascript(callBack);
+                        }else {
+                            if(notificationCallBackReady){
+                                Log.d(TAG, "notificationCallBackReady is true");
+                            }
+                            if(gWebView == null){
+                                Log.d(TAG, "web view is null");
+                            }
+                            Log.d(TAG, "\tView not ready. SAVED NOTIFICATION: " + callBack);
+                            lastPush = intent;
+                        }
+                        // if (dynamicLinkCallback != null) {
+                        //     PluginResult pluginResult = new PluginResult(PluginResult.Status.OK, result);
+                        //     pluginResult.setKeepCallback(true);
+                        //     dynamicLinkCallback.sendPluginResult(pluginResult);
+                        // }
+
+                        return result;
+                    }
+                });
+    }
+
+    @Override
+    public void onNewIntent(Intent intent) {
+        Log.d(TAG, "ON New Intent");
+        if (this.dynamicLinkCallback != null) {
+            respondWithDynamicLink(intent);
+        }
     }
 
     
@@ -471,7 +544,7 @@ public class HWHelper extends CordovaPlugin {
     }
     public void fbDynamicLinkInit(CallbackContext callbackContext) {
         Log.d(TAG, "Starting Firebase Dynamic Link plugin");
-        this.firebaseDynamicLinks = FirebaseDynamicLinks.getInstance();
+        // this.firebaseDynamicLinks = FirebaseDynamicLinks.getInstance();
         callbackContext.success("init success");
     }
     public void onDynamicLink(CallbackContext callbackContext) {
