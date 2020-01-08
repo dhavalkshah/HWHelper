@@ -1,65 +1,83 @@
 var exec = require('cordova/exec');
 
-exports.getDeviceInfo = function(arg0, success, error){
+function HWHelper() { 
+	console.log("HWHelper.js: is created");
+}
+HWHelper.prototype.onDynamicLinkReceived = function(payload){
+	console.log("Received push notification")
+	console.log(payload)
+}
+HWHelper.prototype.onDynamicLink = function( callback, success, error ){
+	HWHelper.prototype.onDynamicLinkReceived = callback;
+	exec(success, error, "HWHelper", 'registerDynamicLink',[]);
+}
+// HWHelper.prototype.onDynamicLink = function(success, error, callback){
+//     exports.onDynamicLinkReceived = callback;
+//     exec(success, error, 'HWHelper', 'onDynamicLink');
+// };
+
+HWHelper.prototype.getDeviceInfo = function(arg0, success, error){
     exec(success, error, 'HWHelper', 'getDeviceInfo', [arg0]);
 };
-exports.pluginInitialize = function(success, error){
+HWHelper.prototype.pluginInitialize = function(success, error){
     exec(success, error, 'HWHelper', 'pluginInitialize');
 };
-exports.logEvent = function(name, params, success, error){
+HWHelper.prototype.logEvent = function(name, params, success, error){
     exec(success, error, 'HWHelper', 'logEvent',  [name, params || {}] );
 };
-exports.setUserId = function(userId, success, error){
+HWHelper.prototype.setUserId = function(userId, success, error){
     exec(success, error, 'HWHelper', 'setUserId',  [userId] );
 };
-exports.setUserProperty = function(name, params, success, error){
+HWHelper.prototype.setUserProperty = function(name, params, success, error){
     exec(success, error, 'HWHelper', 'setUserProperty',  [name, params || {}] );
 };
-exports.resetAnalyticsData = function(success, error){
+HWHelper.prototype.resetAnalyticsData = function(success, error){
     exec(success, error, 'HWHelper', 'resetAnalyticsData');
 };
-exports.setEnabled = function(enabled, success, error){
+HWHelper.prototype.setEnabled = function(enabled, success, error){
     exec(success, error, 'HWHelper', 'setEnabled',  [enabled] );
 };
-exports.setCurrentScreen = function(screenName, success, error){
+HWHelper.prototype.setCurrentScreen = function(screenName, success, error){
     exec(success, error, 'HWHelper', 'setCurrentScreen',  [screenName] );
 };
-exports.crashlyticsInit = function(success, error){
+HWHelper.prototype.crashlyticsInit = function(success, error){
     exec(success, error, 'HWHelper', 'crashlyticsInit', []);
 };
-exports.crash = function(success, error){
+HWHelper.prototype.crash = function(success, error){
     exec(success, error, 'HWHelper', 'crash', []);
 };
-exports.logPriority = function(priority, tag, message, success, error){
+HWHelper.prototype.logPriority = function(priority, tag, message, success, error){
     exec(success, error, 'HWHelper', 'logPriority', [priority, tag, message]);
 };
-exports.log = function(message, success, error){
+HWHelper.prototype.log = function(message, success, error){
     exec(success, error, 'HWHelper', 'log', [message]);
 };
-exports.setString = function(key, value, success, error){
+HWHelper.prototype.setString = function(key, value, success, error){
     exec(success, error, 'HWHelper', 'setString', [key, value]);
 };
-exports.setBool = function(key, value, success, error){
+HWHelper.prototype.setBool = function(key, value, success, error){
     exec(success, error, 'HWHelper', 'setBool', [key, value]);
 };
-exports.setDouble = function(key, value, success, error){
+HWHelper.prototype.setDouble = function(key, value, success, error){
     exec(success, error, 'HWHelper', 'setDouble', [key, value]);
 };
-exports.setFloat = function(key, value, success, error){
+HWHelper.prototype.setFloat = function(key, value, success, error){
     exec(success, error, 'HWHelper', 'setFloat', [key, value]);
 };
-exports.setInt = function(key, value, success, error){
+HWHelper.prototype.setInt = function(key, value, success, error){
     exec(success, error, 'HWHelper', 'setInt', [key, value]);
 };
-exports.setUserIdentifier = function(identifier, success, error){
+HWHelper.prototype.setUserIdentifier = function(identifier, success, error){
     exec(success, error, 'HWHelper', 'setUserIdentifier', [identifier]);
 };
-exports.logException = function(message, success, error){
+HWHelper.prototype.logException = function(message, success, error){
     exec(success, error, 'HWHelper', 'logException', [message]);
 };
-exports.fbDynamicLinkInit = function(success, error){
+HWHelper.prototype.fbDynamicLinkInit = function(success, error){
     exec(success, error, 'HWHelper', 'fbDynamicLinkInit', []);
 };
-exports.onDynamicLink = function(success, error){
-    exec(success, error, 'HWHelper', 'onDynamicLink');
-};
+
+exec(function(result){ console.log("HWHelper Ready OK") }, function(result){ console.log("HWHelper Ready ERROR") }, "HWHelper",'ready',[]);
+
+var hwHelperPlugin = new HWHelper();
+module.exports = hwHelperPlugin;
