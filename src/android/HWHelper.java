@@ -66,6 +66,7 @@ public class HWHelper extends CordovaPlugin {
 		super.initialize(cordova, webView);
         gWebView = webView;
         this.firebaseDynamicLinks = FirebaseDynamicLinks.getInstance();
+        this.domainUriPrefix = "https://firebase.healthwise.in";
 		Log.d(TAG, "==> HWHelper initialize");
 	}
 
@@ -84,6 +85,13 @@ public class HWHelper extends CordovaPlugin {
                     localcallbackContext.success();
                 }
             });
+        }
+        else if(action.equals("createDynamicLink")){
+            Log.d(TAG, "createDynamicLink");
+            JSONObject params = args.getJSONObject(0);
+            int linkType = args.getInt(1);
+            this.createDynamicLink(params, linkType, callbackContext);
+            return true;
         }
         else if(action.equals("getDeviceInfo")) {
             Log.d(TAG, "getDeviceInfo");
@@ -572,5 +580,136 @@ public class HWHelper extends CordovaPlugin {
                         return result;
                     }
                 });
+    }
+    private void createDynamicLink(final JSONObject params, final int linkType, final CallbackContext callbackContext){
+        cordova.getThreadPool().execute(new Runnable() {
+            public void run() {
+                try{
+                    DynamicLink.Builder builder = createDynamicLinkBuilder(params);
+                    if (linkType == 0) {
+                        callbackContext.success(builder.buildDynamicLink().getUri().toString());
+                    } else {
+                        builder.buildShortDynamicLink(linkType)
+                            .addOnCompleteListener(cordova.getActivity(), new OnCompleteListener<ShortDynamicLink>() {
+                                @Override
+                                public void onComplete(Task<ShortDynamicLink> task) {
+                                    if (task.isSuccessful()) {
+                                        callbackContext.success(task.getResult().getShortLink().toString());
+                                    } else {
+                                        callbackContext.error(task.getException().getMessage());
+                                    }
+                                }
+                            });
+                    }
+                }
+                catch(JSONException e){
+                    Log.d(TAG,"Failed to create dyamic link");
+                    callbackContext.error("Failed to create a dynamic link");
+                }
+            }
+        });
+    }
+    private DynamicLink.Builder createDynamicLinkBuilder(JSONObject params) throws JSONException {
+        DynamicLink.Builder builder = this.firebaseDynamicLinks.createDynamicLink();
+        builder.setLink(Uri.parse(params.getString("link")));
+        builder.setDynamicLinkDomain(params.optString("domainUriPrefix", this.domainUriPrefix));
+        
+
+        JSONObject androidInfo = params.optJSONObject("androidInfo");
+        if (androidInfo != null) {
+            builder.setAndroidParameters(getAndroidParameters(androidInfo));
+        }
+
+        JSONObject iosInfo = params.optJSONObject("iosInfo");
+        if (iosInfo != null) {
+            builder.setIosParameters(getIosParameters(iosInfo));
+        }
+
+        JSONObject navigationInfo = params.optJSONObject("navigationInfo");
+        if (navigationInfo != null) {
+            builder.setNavigationInfoParameters(getNavigationInfoParameters(navigationInfo));
+        }
+
+        JSONObject analyticsInfo = params.optJSONObject("analyticsInfo");
+        if (analyticsInfo != null) {
+            JSONObject googlePlayAnalyticsInfo = analyticsInfo.optJSONObject("googlePlayAnalytics");
+            if (googlePlayAnalyticsInfo != null) {
+                builder.setGoogleAnalyticsParameters(getGoogleAnalyticsParameters(googlePlayAnalyticsInfo));
+            }
+            JSONObject itunesConnectAnalyticsInfo = analyticsInfo.optJSONObject("itunesConnectAnalytics");
+            if (itunesConnectAnalyticsInfo != null) {
+                builder.setItunesConnectAnalyticsParameters(getItunesConnectAnalyticsParameters(itunesConnectAnalyticsInfo));
+            }
+        }
+
+        JSONObject socialMetaTagInfo = params.optJSONObject("socialMetaTagInfo");
+        if (socialMetaTagInfo != null) {
+            builder.setSocialMetaTagParameters(getSocialMetaTagParameters(socialMetaTagInfo));
+        }
+
+        return builder;
+    }
+    private AndroidParameters getAndroidParameters(JSONObject androidInfo) throws JSONException {
+        AndroidParameters.Builder androidInfoBuilder;
+        if (androidInfo.has("androidPackageName")) {
+            androidInfoBuilder = new AndroidParameters.Builder(androidInfo.getString("androidPackageName"));
+        } else {
+            androidInfoBuilder = new AndroidParameters.Builder();
+        }
+        if (androidInfo.has("androidFallbackLink")) {
+            androidInfoBuilder.setFallbackUrl(Uri.parse(androidInfo.getString("androidFallbackLink")));
+        }
+        if (androidInfo.has("androidMinPackageVersionCode")) {
+            androidInfoBuilder.setMinimumVersion(androidInfo.getInt("androidMinPackageVersionCode"));
+        }
+        return androidInfoBuilder.build();
+    }
+    private IosParameters getIosParameters(JSONObject iosInfo) throws JSONException {
+        IosParameters.Builder iosInfoBuilder = new IosParameters.Builder(iosInfo.getString("iosBundleId"));
+        iosInfoBuilder.setAppStoreId(iosInfo.optString("iosAppStoreId"));
+        iosInfoBuilder.setIpadBundleId(iosInfo.optString("iosIpadBundleId"));
+        iosInfoBuilder.setMinimumVersion(iosInfo.optString("iosMinPackageVersion"));
+        if (iosInfo.has("iosFallbackLink")) {
+            iosInfoBuilder.setFallbackUrl(Uri.parse(iosInfo.getString("iosFallbackLink")));
+        }
+        if (iosInfo.has("iosIpadFallbackLink")) {
+            iosInfoBuilder.setIpadFallbackUrl(Uri.parse(iosInfo.getString("iosIpadFallbackLink")));
+        }
+        return iosInfoBuilder.build();
+    }
+
+    private NavigationInfoParameters getNavigationInfoParameters(JSONObject navigationInfo) throws JSONException {
+        NavigationInfoParameters.Builder navigationInfoBuilder = new NavigationInfoParameters.Builder();
+        if (navigationInfo.has("enableForcedRedirect")) {
+            navigationInfoBuilder.setForcedRedirectEnabled(navigationInfo.getBoolean("enableForcedRedirect"));
+        }
+        return navigationInfoBuilder.build();
+    }
+
+    private GoogleAnalyticsParameters getGoogleAnalyticsParameters(JSONObject googlePlayAnalyticsInfo) {
+        GoogleAnalyticsParameters.Builder gaInfoBuilder = new GoogleAnalyticsParameters.Builder();
+        gaInfoBuilder.setSource(googlePlayAnalyticsInfo.optString("utmSource"));
+        gaInfoBuilder.setMedium(googlePlayAnalyticsInfo.optString("utmMedium"));
+        gaInfoBuilder.setCampaign(googlePlayAnalyticsInfo.optString("utmCampaign"));
+        gaInfoBuilder.setContent(googlePlayAnalyticsInfo.optString("utmContent"));
+        gaInfoBuilder.setTerm(googlePlayAnalyticsInfo.optString("utmTerm"));
+        return gaInfoBuilder.build();
+    }
+    private ItunesConnectAnalyticsParameters getItunesConnectAnalyticsParameters(JSONObject itunesConnectAnalyticsInfo) {
+        ItunesConnectAnalyticsParameters.Builder iosAnalyticsInfo = new ItunesConnectAnalyticsParameters.Builder();
+        iosAnalyticsInfo.setAffiliateToken(itunesConnectAnalyticsInfo.optString("at"));
+        iosAnalyticsInfo.setCampaignToken(itunesConnectAnalyticsInfo.optString("ct"));
+        iosAnalyticsInfo.setProviderToken(itunesConnectAnalyticsInfo.optString("pt"));
+        return iosAnalyticsInfo.build();
+    }
+
+    private SocialMetaTagParameters getSocialMetaTagParameters(JSONObject socialMetaTagInfo) throws JSONException {
+        SocialMetaTagParameters.Builder socialInfoBuilder = new SocialMetaTagParameters.Builder();
+        socialInfoBuilder.setTitle(socialMetaTagInfo.optString("socialTitle"));
+        socialInfoBuilder.setDescription(socialMetaTagInfo.optString("socialDescription"));
+        if (socialMetaTagInfo.has("socialImageLink")) {
+            socialInfoBuilder.setImageUrl(Uri.parse(socialMetaTagInfo.getString("socialImageLink")));
+        }
+        return socialInfoBuilder.build();
     }
 }

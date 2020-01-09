@@ -76,6 +76,12 @@ HWHelper.prototype.logException = function(message, success, error){
 HWHelper.prototype.fbDynamicLinkInit = function(success, error){
     exec(success, error, 'HWHelper', 'fbDynamicLinkInit', []);
 };
+HWHelper.prototype.createShortDynamicLink = function(success, error){
+    exec(success, error, 'HWHelper', 'createDynamicLink', [params, cordova.platformId === "ios" ? 1 : 2]);
+};
+HWHelper.prototype.createDynamicLink = function(success, error){
+    exec(success, error, 'HWHelper', 'createDynamicLink', [params, 0]);
+};
 
 exec(function(result){ console.log("HWHelper Ready OK") }, function(result){ console.log("HWHelper Ready ERROR") }, "HWHelper",'ready',[]);
 
